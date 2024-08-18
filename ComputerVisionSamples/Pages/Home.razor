@@ -1,0 +1,201 @@
+﻿@page "/"
+@using BlazorCameraStreamer
+@using ComputerVisionSamples
+@inject NavigationManager Navigation
+
+<PageTitle>Samples</PageTitle>
+<FluentDesignTheme @bind-Mode="@Mode" @bind-OfficeColor="@OfficeColor" />
+
+<div class="container">
+    <div class="video-container">
+        <CameraStreamer @ref="cameraStreamer"
+                        OnRendered="OnRenderedHandler"
+                        OnFrame="OnFrameHandler"
+                        Style="width: 100%; height: 100%;"
+                        CameraID="@cameraId"
+                        Autostart />
+    </div>
+    <div class="output-container">
+        @if (!string.IsNullOrEmpty(OutputImage))
+        {
+            <img src="@OutputImage" class="output-image" />
+        }
+        else
+        {
+            <p>No output image available.</p>
+        }
+    </div>
+</div>
+
+<button class="settings-button" @onclick="ToggleSettingsPanel">⚙️</button>
+
+@if (showSettingsPanel)
+{
+    <div class="settings-panel">
+        <label for="cameraDropdown">Select Camera</label>
+        <div id="cameraDropdown">
+            <FluentSelect TOption="Option<MediaDeviceInfoModel>" Appearance="Appearance.Outline" ValueChanged="OnCameraChanged">
+                @foreach (var camera in availableCameras)
+                {
+                    <FluentOption Value="@camera.DeviceId">@camera.Label</FluentOption>
+                }
+            </FluentSelect>
+        </div>
+    </div>
+}
+
+<div class="tabs-container">
+    <FluentSwitch @bind-Value="@runOpenCvLoop">Apply Effect</FluentSwitch>
+    <FluentTabs @bind-ActiveTabId="@activeid" OnTabChange="HandleOnTabChange">
+        @foreach (var example in imageProcessor.examplesNamesList)
+        {
+            <FluentTab Label=@example Id="@example">
+                @* <p>Content for @activeid.</p> *@
+            </FluentTab>
+        }
+    </FluentTabs>
+</div>
+
+@code {
+    // Theme
+    public DesignThemeModes Mode { get; set; } = DesignThemeModes.Dark;
+    public OfficeColor? OfficeColor { get; set; } = Microsoft.FluentUI.AspNetCore.Components.OfficeColor.Office;
+
+    List<MediaDeviceInfoModel> availableCameras = new List<MediaDeviceInfoModel>();
+    bool runOpenCvLoop = true;
+    ImageProcessor imageProcessor = new ImageProcessor();
+    // Camera
+    private CameraStreamer cameraStreamer;
+    private bool showSettingsPanel = false;
+    string cameraId = null;
+    string? activeid = "";
+    protected override async Task OnInitializedAsync()
+    {
+        activeid = imageProcessor.examplesNamesList.First();
+    }
+
+    async void OnCameraChanged(string cameraName)
+    {
+        await cameraStreamer.ChangeCameraAsync(cameraName);
+    }
+
+    private async void OnRenderedHandler()
+    {
+        if (await cameraStreamer.GetCameraAccessAsync())
+        {
+            await cameraStreamer.ReloadAsync();
+        }
+
+        availableCameras = (await cameraStreamer.GetCameraDevicesAsync()).ToList();
+    }
+    FluentTab? CurrentTab;
+    private void HandleOnTabChange(FluentTab tab)
+    {
+        CurrentTab = tab;
+    }
+    string OutputImage = "";
+    private void OnFrameHandler(string data)
+    {
+        if (runOpenCvLoop)
+        {
+            imageProcessor.imageHeight = cameraStreamer.Height;
+            imageProcessor.imageWidth = cameraStreamer.Width;
+            Task.Run(() =>
+            {
+                try
+                {
+                    data = data[(data.IndexOf(',') + 1)..];
+                    var datastream = Convert.FromBase64String(data);
+                    var result = imageProcessor.ExecuteExample(activeid, datastream);
+                    OutputImage = $"data:image;base64,{Convert.ToBase64String(result)}";
+                    // InvokeAsync(StateHasChanged);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+            });
+        }
+    }
+
+    private void ToggleSettingsPanel()
+    {
+        showSettingsPanel = !showSettingsPanel;
+    }
+
+    public void Dispose()
+    {
+        cameraStreamer.DisposeAsync();
+        imageProcessor.Dispose();
+    }
+}
+
+<style>
+    .container {
+        display: flex;
+        width: 100%;
+        height: 100vh;
+        margin: 5px;
+    }
+
+    .video-container {
+        flex: 1;
+        background-color: black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .output-container {
+        flex: 1;
+        background-color: black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .output-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .settings-button {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 2;
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 24px;
+        color: white;
+    }
+
+    .settings-panel {
+        position: absolute;
+        top: 50px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 3;
+        color: white;
+    }
+
+    .tabs-container {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 4;
+        display: flex;
+        flex-direction: column;
+        width: 25%;
+        max-width: 400px;
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 10px;
+        border-radius: 5px;
+    }
+</style>
