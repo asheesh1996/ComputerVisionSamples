@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    
+    - name: Setup
+      run: dotnet workload install wasm-tools
 
     - name: Publish app
       run: dotnet publish -c Release
