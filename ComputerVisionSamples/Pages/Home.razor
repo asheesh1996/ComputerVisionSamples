@@ -164,50 +164,44 @@
 <style>
     .options-container {
         height: 100vh;
-        padding: 5px;
+        padding: 0; /* Remove padding from the container */
         background-color: black;
+        margin: 0; /* Remove margin from the container */
     }
 
     .container {
         display: flex;
         width: 100%;
-        height: 100vh;
-        padding: 5px;
+        height: 100%;
+        padding: 0; /* Remove padding from the container */
         background-color: black;
     }
 
-    .container.vertical {
-        flex-direction: column; /* Stack vertically */
-    }
+        .container.vertical {
+            flex-direction: column; /* Stack vertically */
+        }
 
-    .container.horizontal {
-        flex-direction: row; /* Stack horizontally */
-    }
+        .container.horizontal {
+            flex-direction: row; /* Stack horizontally */
+        }
 
 
-    .video-container {
-        flex: 1;
-        background-color: black;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-    }
-
-    .output-container {
-        flex: 1;
+    .video-container, .output-container {
         background-color: black;
         display: flex;
         align-items: center;
         justify-content: center;
         position: relative;
+        width: 100%; /* Ensure both containers take full width */
+        margin: 20px 0; /* Add vertical margins (top and bottom) */
     }
 
     .output-image {
         width: 100%;
-        height: 100%;
+        height: auto; /* Maintain aspect ratio */
         object-fit: contain;
     }
+
 
 
     .settings-panel {
@@ -228,7 +222,7 @@
         position: absolute;
         top: 10px;
         width: 100%;
-        padding-right: 50px;
+        padding-right: 10px;
         padding-bottom: 5px;
         padding-left: 10px;
     }
