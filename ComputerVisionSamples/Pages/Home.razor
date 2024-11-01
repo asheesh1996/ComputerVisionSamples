@@ -2,6 +2,8 @@
 @using BlazorCameraStreamer
 @using ComputerVisionSamples
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
 
 <PageTitle>Open CV Samples</PageTitle>
 
@@ -21,28 +23,28 @@
         }
     </FluentTabs>
 </div>
-
-<div class="container">
-    <div class="video-container">
-        <CameraStreamer @ref="cameraStreamer"
-                        OnRendered="OnRenderedHandler"
-                        OnFrame="OnFrameHandler"
-                        Style="width: 100%; height: 100%;"
-                        CameraID="@cameraId"
-                        Autostart />
-    </div>
-    <div class="output-container">
-        @if (!string.IsNullOrEmpty(OutputImage))
-        {
-            <img src="@OutputImage" class="output-image" />
-        }
-        else
-        {
-            <p>No output image available.</p>
-        }
+<div class="options-container">
+    <div class="@ContainerClass">
+        <div class="video-container">
+            <CameraStreamer @ref="cameraStreamer"
+                            OnRendered="OnRenderedHandler"
+                            OnFrame="OnFrameHandler"
+                            Style="width: 100%; height: 100%;"
+                            CameraID="@cameraId"
+                            Autostart />
+        </div>
+        <div class="output-container">
+            @if (!string.IsNullOrEmpty(OutputImage))
+            {
+                <img src="@OutputImage" class="output-image" />
+            }
+            else
+            {
+                <p>No output image available.</p>
+            }
+        </div>
     </div>
 </div>
-
 
 @if (showSettingsPanel)
 {
@@ -71,9 +73,29 @@
     private bool showSettingsPanel = false;
     string cameraId = null;
     string? activeid = "";
+
+    private string ContainerClass { get; set; } = "container";
+    private DotNetObjectReference<Home> objRef;
+
+
     protected override async Task OnInitializedAsync()
     {
         activeid = imageProcessor.examplesNamesList.First();
+        objRef = DotNetObjectReference.Create(this);
+        await JSRuntime.InvokeVoidAsync("addResizeListener", objRef);
+        await UpdateContainerClass();
+    }
+    [JSInvokable]
+    public async Task OnResize()
+    {
+        await UpdateContainerClass();
+        StateHasChanged(); // Notify Blazor to re-render
+    }
+
+    private async Task UpdateContainerClass()
+    {
+        var dimensions = await JSRuntime.InvokeAsync<WindowDimensions>("getWindowDimensions");
+        ContainerClass = dimensions.Height > dimensions.Width ? "container vertical" : "container horizontal";
     }
 
     async void OnCameraChanged(string cameraName)
@@ -129,6 +151,13 @@
     {
         cameraStreamer.DisposeAsync();
         imageProcessor.Dispose();
+        JSRuntime.InvokeVoidAsync("removeResizeListener");
+        objRef?.Dispose();
+    }
+    private class WindowDimensions
+    {
+        public int Width { get; set; }
+        public int Height { get; set; }
     }
 }
 
@@ -146,6 +175,15 @@
         padding: 5px;
         background-color: black;
     }
+
+    .container.vertical {
+        flex-direction: column; /* Stack vertically */
+    }
+
+    .container.horizontal {
+        flex-direction: row; /* Stack horizontally */
+    }
+
 
     .video-container {
         flex: 1;
@@ -190,10 +228,9 @@
         position: absolute;
         top: 10px;
         width: 100%;
-        padding-right: 40px;
+        padding-right: 50px;
         padding-bottom: 5px;
         padding-left: 10px;
-        z-index: 2;
     }
 
     .settings-button {
@@ -202,12 +239,12 @@
         font-size: 24px;
         color: white;
         right: 50px;
-        padding : 5px;
+        padding: 5px;
     }
 
     .tabs-container {
-        width: 100%;
-        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 5;
+        background-color: rgba(0, 0, 0, 0.75);
         padding: 10px;
         border-radius: 5px;
         margin-top: 50px; /* Adjust this value based on the height of the header */
