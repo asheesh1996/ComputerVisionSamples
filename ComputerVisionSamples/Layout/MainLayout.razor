@@ -1,6 +1,15 @@
 ﻿@inherits LayoutComponentBase
 
-<FluentDesignTheme StorageName="theme" />
-<div class="content">
-    @Body
-</div>
+<FluentToastProvider />
+<FluentDialogProvider />
+<FluentTooltipProvider />
+<FluentMessageBarProvider />
+<FluentMenuProvider />
+<FluentDesignTheme  Mode=mode OfficeColor=officeColor StorageName="theme" />
+@Body
+
+@code {
+    // Default theme settings, adjust as needed
+    private DesignThemeModes mode { get; set; } = DesignThemeModes.Dark;
+    private OfficeColor? officeColor { get; set; } = OfficeColor.Office;
+}
