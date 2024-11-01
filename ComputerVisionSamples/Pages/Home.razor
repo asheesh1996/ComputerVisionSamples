@@ -14,7 +14,7 @@
 </div>
 
 <div class="tabs-container">
-    <FluentTabs @bind-ActiveTabId="@activeid" OnTabChange="HandleOnTabChange">
+    <FluentTabs @bind-ActiveTabId="@activeid" OnTabChange="HandleOnTabChange" Width="100%">
         @foreach (var example in imageProcessor.examplesNamesList)
         {
             <FluentTab Label=@example Id="@example">
@@ -132,7 +132,7 @@
                     var datastream = Convert.FromBase64String(data);
                     var result = imageProcessor.ExecuteExample(activeid, datastream);
                     OutputImage = $"data:image;base64,{Convert.ToBase64String(result)}";
-                    // InvokeAsync(StateHasChanged);
+                    InvokeAsync(StateHasChanged);
                 }
                 catch (Exception e)
                 {
@@ -193,7 +193,6 @@
         justify-content: center;
         position: relative;
         width: 100%; /* Ensure both containers take full width */
-        margin: 20px 0; /* Add vertical margins (top and bottom) */
     }
 
     .output-image {
@@ -237,10 +236,12 @@
     }
 
     .tabs-container {
+        width: 100%;
         z-index: 5;
         background-color: rgba(0, 0, 0, 0.75);
         padding: 10px;
         border-radius: 5px;
         margin-top: 50px; /* Adjust this value based on the height of the header */
     }
+
 </style>

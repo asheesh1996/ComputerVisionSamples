@@ -70,7 +70,7 @@ public class ImageProcessor : IDisposable
     {
         using (Mat img = ConvertImageToMat(data))
         {
-            using (Mat edges = new Mat())
+            using (Mat edges = new Mat(img.Size(), MatType.CV_8UC3, Scalar.All(0)))
             {
                 Cv2.Canny(img, edges, 100, 200);
                 return edges.ToBytes(".bmp");
@@ -88,10 +88,12 @@ public class ImageProcessor : IDisposable
             {
                 prevFrame = Gray.Clone();
             }
-            Mat flow = new Mat();
-            Cv2.CalcOpticalFlowFarneback(prevFrame, Gray, flow, 0.5, 3, 15, 3, 5, 1.2, 0);
-            prevFrame = Gray.Clone();
-            return flow.ToBytes(".bmp");
+            using (Mat flow = new Mat(img.Size(), MatType.CV_8UC3, Scalar.All(0)))
+            {
+                Cv2.CalcOpticalFlowFarneback(prevFrame, Gray, flow, 0.5, 3, 15, 3, 5, 1.2, 0);
+                prevFrame = Gray.Clone();
+                return flow.ToBytes(".bmp");
+            }
         }
     }
     private byte[] ContoursAndShape(byte[] data)
@@ -106,7 +108,7 @@ public class ImageProcessor : IDisposable
                 Point[][] contours;
                 HierarchyIndex[] hierarchy;
                 Cv2.FindContours(binary, out contours, out hierarchy, RetrievalModes.Tree, ContourApproximationModes.ApproxSimple);
-                using (Mat contourImg = new Mat(Gray.Size(), MatType.CV_8UC3))
+                using (Mat contourImg = new Mat(img.Size(), MatType.CV_8UC3, Scalar.All(0)))
                 {
                     Cv2.DrawContours(contourImg, contours, -1, Scalar.Red, 2);
                     return contourImg.ToBytes(".bmp");
@@ -136,43 +138,49 @@ public class ImageProcessor : IDisposable
             centers.ConvertTo(centers, MatType.CV_8UC3);
 
             // Create a segmented image based on the labels
-            Mat segmentedImg = new Mat(img.Size(), MatType.CV_8UC3);
-            for (int i = 0; i < data.Rows; i++)
+            using (Mat segmentedImg = new Mat(img.Size(), MatType.CV_8UC3))
             {
-                int clusterIdx = labels.At<int>(i);
-                Vec3b color = centers.Row(clusterIdx).At<Vec3b>(0);
-                segmentedImg.Set(i / img.Cols, i % img.Cols, color);
+                for (int i = 0; i < data.Rows; i++)
+                {
+                    int clusterIdx = labels.At<int>(i);
+                    Vec3b color = centers.Row(clusterIdx).At<Vec3b>(0);
+                    segmentedImg.Set(i / img.Cols, i % img.Cols, color);
+                }
+                return segmentedImg.ToBytes(".bmp");
             }
-            return segmentedImg.ToBytes(".bmp");
         }
     }
     private byte[] GaussianBlur(byte[] inputdata)
     {
         using (Mat img = ConvertImageToMat(inputdata))
         {
-            Mat gaussianBlurred = new Mat();
-            Cv2.GaussianBlur(img, gaussianBlurred, new OpenCvSharp.Size(15, 15), 0);
-            return gaussianBlurred.ToBytes(".bmp");
+            using (Mat gaussianBlurred = new Mat(img.Size(), MatType.CV_8UC3))
+            {
+                Cv2.GaussianBlur(img, gaussianBlurred, new OpenCvSharp.Size(15, 15), 0);
+                return gaussianBlurred.ToBytes(".bmp");
+            }
         }
     }
     private byte[] MedianBlur(byte[] inputdata)
     {
         using (Mat img = ConvertImageToMat(inputdata))
         {
-            Mat medianBlurred = new Mat();
-            Cv2.MedianBlur(img, medianBlurred, 15);
-            return medianBlurred.ToBytes(".bmp");
-
+            using (Mat medianBlurred = new Mat(img.Size(), MatType.CV_8UC3))
+            {
+                Cv2.MedianBlur(img, medianBlurred, 15);
+                return medianBlurred.ToBytes(".bmp");
+            }
         }
     }
     private byte[] HistoGram(byte[] inputdata)
     {
         using (Mat img = ConvertImageToMat(inputdata))
         {
-            Mat equalizedImg = new Mat();
-            Cv2.EqualizeHist(img, equalizedImg);
-            return equalizedImg.ToBytes(".bmp");
-
+            using (Mat equalizedImg = new Mat(img.Size(), MatType.CV_8UC3))
+            {
+                Cv2.EqualizeHist(img, equalizedImg);
+                return equalizedImg.ToBytes(".bmp");
+            }
         }
     }
     private byte[] ORBFeatures(byte[] inputdata)
@@ -188,11 +196,11 @@ public class ImageProcessor : IDisposable
             Mat descriptors = new Mat();
             orb.DetectAndCompute(grayImg, null, out keyPoints, descriptors);
 
-            // Draw keypoints
-            Mat keypointsImg = new Mat();
-            Cv2.DrawKeypoints(img, keyPoints, keypointsImg);
-
-            return keypointsImg.ToBytes(".bmp");
+            using (Mat keypointsImg = new Mat(img.Size(), MatType.CV_8UC3))
+            {
+                Cv2.DrawKeypoints(img, keyPoints, keypointsImg);
+                return keypointsImg.ToBytes(".bmp");
+            }
 
         }
     }
