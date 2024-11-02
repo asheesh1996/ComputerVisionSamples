@@ -10,6 +10,12 @@
 <div class="header-container">
     <FluentSwitch @bind-Value="@runOpenCvLoop" class="fluent-switch">Apply Effect</FluentSwitch>
 
+    <a href="https://github.com/asheesh1996/ComputerVisionSamples" target="_blank" class="github-icon" title="GitHub Repository">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="32" height="32">
+            <path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.29 7.44c.39.07.53-.17.53-.39 0-.18-.01-.81-.01-1.46-2.13.46-2.58-1.02-2.58-1.02-.35-.89-.85-1.13-.85-1.13-.7-.48.05-.47.05-.47.77.05 1.17.79 1.17.79.69 1.18 1.81.84 2.25.64.07-.5.27-.84.49-1.03-1.73-.2-3.55-.86-3.55-3.83 0-.85.3-1.55.79-2.1-.08-.2-.34-.91.07-1.89 0 0 .66-.21 2.16.79A7.05 7.05 0 018 3.13c.66.003 1.32.09 1.95.26 1.5-1 2.16-.79 2.16-.79.41.98.15 1.69.07 1.89.49.55.79 1.25.79 2.1 0 2.97-1.82 3.63-3.56 3.83.27.23.51.69.51 1.39 0 1-.01 1.79-.01 2.02 0 .22.14.47.53.39A8 8 0 0016 8c0-4.42-3.58-8-8-8z" />
+        </svg>
+    </a>
+
     <button class="settings-button" @onclick="ToggleSettingsPanel">⚙️</button>
 </div>
 
@@ -163,6 +169,7 @@
 
 <style>
     .options-container {
+        width: 100%;
         height: 100vh;
         padding: 0; /* Remove padding from the container */
         background-color: black;
@@ -193,12 +200,11 @@
         justify-content: center;
         position: relative;
         width: 100%; /* Ensure both containers take full width */
-        height: 100%
+        /* height: 100vh; */
     }
 
     .output-image {
         width: 100%;
-        height: 100%
         height: auto; /* Maintain aspect ratio */
         object-fit: contain;
     }
@@ -226,6 +232,17 @@
         padding-right: 10px;
         padding-bottom: 5px;
         padding-left: 10px;
+    }
+
+    .github-icon {
+        margin: 0 auto; /* Center the icon */
+        display: flex; /* Flex to center content */
+        justify-content: center; /* Center horizontally */
+        align-items: center; /* Center vertically */
+        height: 32px; /* Adjust height to match icon size */
+        width: 32px; /* Adjust width to match icon size */
+        text-decoration: none; /* Remove underline from link */
+        color: white; /* Change color to your theme color */
     }
 
     .settings-button {
