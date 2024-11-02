@@ -5,8 +5,11 @@
 <FluentTooltipProvider />
 <FluentMessageBarProvider />
 <FluentMenuProvider />
-<FluentDesignTheme  Mode=mode OfficeColor=officeColor StorageName="theme" />
-@Body
+<FluentDesignTheme Mode=mode OfficeColor=officeColor />
+
+<div>
+    @Body
+</div>
 
 @code {
     // Default theme settings, adjust as needed

@@ -1,4 +1,5 @@
-﻿using OpenCvSharp;
+﻿using Microsoft.AspNetCore.Components.Forms;
+using OpenCvSharp;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -21,6 +22,8 @@ public class ImageProcessor : IDisposable
         examplesMap.Add("Median Blur", MedianBlur);
         //examplesMap.Add("Histogram", HistoGram);
         examplesMap.Add("ORB Features", ORBFeatures);
+        examplesMap.Add("Detect Circles", DetectCircles);
+        //examplesMap.Add("DFT", DFTPowerSpectrum);
         //Console.WriteLine(examplesMap.Count);
 
     }
@@ -169,6 +172,38 @@ public class ImageProcessor : IDisposable
             }
         }
     }
+
+    private byte[] DetectCircles(byte[] inputdata)
+    {
+        using (Mat img = ConvertImageToMat(inputdata))
+        {
+            Mat gray = new Mat();
+            Cv2.CvtColor(img, gray, ColorConversionCodes.BGR2GRAY);
+            // Apply median blur to the grayscale image
+            Cv2.MedianBlur(gray, gray, 5);
+            // Vector to store detected circles
+            var circles = Cv2.HoughCircles(
+                gray,
+                HoughModes.Gradient,
+                1,
+                gray.Rows / 16, // Minimum distance between circles
+                100,           // Higher threshold for Canny edge detector
+                30,            // Lower threshold for center detection
+                1,             // Minimum circle radius
+                30             // Maximum circle radius
+            );
+            // Draw the detected circles on the original image
+            foreach (var c in circles)
+            {
+                var center = c.Center.ToPoint();
+                // Circle center
+                Cv2.Circle(img, center, 1, new Scalar(0, 100, 100), 3, LineTypes.AntiAlias);
+                // Circle outline
+                Cv2.Circle(img, center, (int)c.Radius, new Scalar(255, 0, 255), 3, LineTypes.AntiAlias);
+            }
+            return img.ToBytes(".bmp");
+        }
+    }
     private byte[] HistoGram(byte[] inputdata)
     {
         using (Mat img = ConvertImageToMat(inputdata))
@@ -199,6 +234,60 @@ public class ImageProcessor : IDisposable
                 return keypointsImg.ToBytes(".bmp");
             }
 
+        }
+    }
+    private byte[] DFTPowerSpectrum(byte[] inputdata)
+    {
+        using (Mat inputImage = ConvertImageToMat(inputdata))
+        {
+            // Expand input image to optimal size
+            Mat padded = new Mat();
+            int m = Cv2.GetOptimalDFTSize(inputImage.Rows);
+            int n = Cv2.GetOptimalDFTSize(inputImage.Cols);
+            Cv2.CopyMakeBorder(inputImage, padded, 0, m - inputImage.Rows, 0, n - inputImage.Cols, BorderTypes.Constant, new Scalar(0));
+
+            // Create a matrix with two channels (real and imaginary)
+            Mat[] planes = { new Mat(padded.Size(), MatType.CV_32F), new Mat(padded.Size(), MatType.CV_32F) };
+            Mat complexI = new Mat();
+            Cv2.Merge(planes, complexI);
+
+            // Perform DFT
+            Cv2.Dft(complexI, complexI);
+
+            // Compute the magnitude and switch to logarithmic scale
+            Cv2.Split(complexI, out planes);
+            Cv2.Magnitude(planes[0], planes[1], planes[0]);
+            Mat magI = planes[0];
+
+            magI += new Scalar(1); // Switch to logarithmic scale
+            Cv2.Log(magI, magI);
+
+            // Crop the spectrum, if it has an odd number of rows or columns
+            magI = magI[new Rect(0, 0, magI.Cols & -2, magI.Rows & -2)];
+
+            // Rearrange the quadrants of the Fourier image so that the origin is at the image center
+            int cx = magI.Cols / 2;
+            int cy = magI.Rows / 2;
+
+            Mat q0 = magI[new Rect(0, 0, cx, cy)]; // Top-Left
+            Mat q1 = magI[new Rect(cx, 0, cx, cy)]; // Top-Right
+            Mat q2 = magI[new Rect(0, cy, cx, cy)]; // Bottom-Left
+            Mat q3 = magI[new Rect(cx, cy, cx, cy)]; // Bottom-Right
+
+            // Swap quadrants
+            Mat tmp = new Mat();
+            q0.CopyTo(tmp);
+            q3.CopyTo(q0);
+            tmp.CopyTo(q3);
+
+            q1.CopyTo(tmp); // Swap quadrant (Top-Right with Bottom-Left)
+            q2.CopyTo(q1);
+            tmp.CopyTo(q2);
+
+            // Normalize the magnitude image for display
+            Cv2.Normalize(magI, magI, 0, 1, NormTypes.MinMax);
+
+            return magI.ToBytes(".bmp"); ; // Return the power spectrum
         }
     }
     public void Dispose()
