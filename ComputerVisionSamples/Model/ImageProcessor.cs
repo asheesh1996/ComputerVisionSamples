@@ -36,29 +36,26 @@ public class ImageProcessor : IDisposable
             throw new ArgumentException("Example not found", nameof(exampleName));
         }
     }
-    private Mat ConvertImageToMat(byte[] data)
+    private static Mat ConvertImageToMat(byte[] data)
     {
-        using (var loadedImage = LoadImageFromByteArrayAsync(data))
+        using (var stream = new MemoryStream(data))
         {
-            var convertedData = ConvertImageToByteArrayAsync(loadedImage);
-            return Mat.FromImageData(convertedData, ImreadModes.Color);
+            // Load the image from the byte array
+            using (var loadedImage = Image.Load<Rgba32>(stream))
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    // Convert the loaded image to a byte array in BMP format
+                    loadedImage.Save(memoryStream, new BmpEncoder());
+                    byte[] convertedData = memoryStream.ToArray();
+
+                    // Return as a Mat
+                    return Mat.FromImageData(convertedData, ImreadModes.Color);
+                }
+            }
         }
     }
-    public static Image<Rgba32> LoadImageFromByteArrayAsync(byte[] imageData)
-    {
-        using (var stream = new MemoryStream(imageData))
-        {
-            return Image.Load<Rgba32>(stream);
-        }
-    }
-    public static byte[] ConvertImageToByteArrayAsync(Image<Rgba32> image)
-    {
-        using (var memoryStream = new MemoryStream())
-        {
-            image.Save(memoryStream, new BmpEncoder());
-            return memoryStream.ToArray();
-        }
-    }
+
     private byte[] ImageLoop(byte[] data)
     {
         using (Mat img = ConvertImageToMat(data))
